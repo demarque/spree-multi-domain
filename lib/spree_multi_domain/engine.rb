@@ -17,39 +17,6 @@ module SpreeMultiDomain
 
     config.to_prepare &method(:activate).to_proc
 
-    initializer "templates with dynamic layouts" do |app|
-      ActionView::TemplateRenderer.prepend(
-        Module.new do
-          def find_layout(layout, locals, formats=[])
-            store_layout = layout
-            if @view.respond_to?(:current_store) && @view.current_store && !@view.controller.is_a?(Spree::Admin::BaseController) && !@view.controller.is_a?(Spree::Api::BaseController)
-              store_layout = if layout.is_a?(String)
-                layout.gsub("layouts/", "layouts/#{@view.current_store.code}/")
-              else
-                layout.call.try(:gsub, "layouts/", "layouts/#{@view.current_store.code}/")
-              end
-            end
-
-            begin
-
-              if Rails.gem_version >= Gem::Version.new('5.x') # hack to make it work with rails 4.x and 5.x
-                super(store_layout, locals, formats)
-              else
-                super(store_layout, locals, *formats)
-              end
-
-            rescue ::ActionView::MissingTemplate
-              if Rails.gem_version >= Gem::Version.new('5.x') # hack to make it work with rails 4.x and 5.x
-                super(layout, locals, formats)
-              else
-                super(layout, locals, *formats)
-              end
-            end
-          end
-        end
-      )
-    end
-
     initializer "current order decoration" do |app|
       require 'spree/core/controller_helpers/order'
       ::Spree::Core::ControllerHelpers::Order.prepend(
